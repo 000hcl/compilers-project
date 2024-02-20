@@ -37,14 +37,29 @@ def parse(tokens: list[Token]) -> ast.Expression:
         token = consume()
         return ast.Identifier(token.text)
     
-    def parse_term() -> ast.Expression:
+    def parse_factor() -> ast.Expression:
+        if peek().text == '(':
+            return parse_parenthesized()
         if peek().type == 'int_literal':
             return parse_int_literal()
         elif peek().type == 'identifier':
             return parse_identifier()
         else:
             raise Exception(f'{peek().loc}: expected an integer literal or an identifier')
-    
+
+    def parse_term() -> ast.Expression:
+        left = parse_factor()
+        while peek().text in ['*', '/']:
+            operator_token = consume()
+            operator = operator_token.text
+            right = parse_factor()
+            left = ast.BinaryOp(
+                left,
+                operator,
+                right
+            )
+        return left
+
     def parse_expression() -> ast.BinaryOp:
         left = parse_term()
         
@@ -61,7 +76,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         
         return left
     
-    #TODO: testing
+    #TODO: testing, update to new version
     def parse_expression_right() -> ast.BinaryOp:
         pos_copy = pos
         #get all relevant tokens
@@ -88,6 +103,12 @@ def parse(tokens: list[Token]) -> ast.Expression:
                     right
                 )
         return right
+
+    def parse_parenthesized() -> ast.Expression:
+        consume('(')
+        expr = parse_expression()
+        consume(')')
+        return expr
             
     
     return parse_expression()
