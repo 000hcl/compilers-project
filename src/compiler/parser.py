@@ -1,5 +1,6 @@
 #from compiler.tokenizer import Token
 from compiler.objs.tokenclass import Token
+#from compiler.objs.location import Location
 import compiler.ast as ast
 
 def parse(tokens: list[Token]) -> ast.Expression:
@@ -9,8 +10,12 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if pos < len(tokens):
             return tokens[pos]
         else:
+            if len(tokens) == 0:
+                location = None
+            else:
+                location = tokens[-1].loc
             return Token(
-                loc= tokens[-1].loc,
+                loc= location,
                 type='end',
                 text=''
             )
@@ -22,6 +27,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if isinstance(expected, list) and token.text not in expected:
             comma_separated = ", ".join([f'"{e}"' for e in expected])
             raise Exception(f'{token.loc}: expected one of: {comma_separated}')
+        nonlocal pos
         pos += 1
         return token
     
@@ -60,10 +66,12 @@ def parse(tokens: list[Token]) -> ast.Expression:
             )
         return left
 
-    def parse_expression() -> ast.BinaryOp:
+    def parse_expression() -> ast.Expression:
+        #print(pos)
         left = parse_term()
         
         while peek().text in ['+','-']:
+            print(pos)
             operator_token = consume()
             operator = operator_token.text
             
@@ -74,9 +82,12 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 right
             )
         
+        
+        
         return left
     
     #TODO: testing, update to new version
+    """
     def parse_expression_right() -> ast.BinaryOp:
         pos_copy = pos
         #get all relevant tokens
@@ -103,13 +114,21 @@ def parse(tokens: list[Token]) -> ast.Expression:
                     right
                 )
         return right
+    """
+
 
     def parse_parenthesized() -> ast.Expression:
         consume('(')
         expr = parse_expression()
         consume(')')
         return expr
-            
     
-    return parse_expression()
+    def parse_and_handle_entire_expression() -> ast.Expression:
+        expr = parse_expression()
+        #if leftover tokens, raise excpetion
+        if peek().type != 'end':
+            raise Exception(f'{peek().loc}: Unexpected token. Could not parse: {peek().type} "{peek().text}".')
+        return expr
+    
+    return parse_and_handle_entire_expression()
 

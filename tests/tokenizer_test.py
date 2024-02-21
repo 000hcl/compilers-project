@@ -2,8 +2,6 @@ from compiler.tokenizer import tokenize # type: ignore
 from compiler.objs.tokenclass import Token
 from compiler.objs.location import L, Location
 
-#Task 1 tests
-
 def test_tokenizer_basics() -> None:
     assert tokenize("if  3\nwhile") == [Token('if', 'identifier', L),
                                         Token('3', 'int_literal', L),
