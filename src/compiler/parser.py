@@ -46,6 +46,8 @@ def parse(tokens: list[Token]) -> ast.Expression:
     def parse_factor() -> ast.Expression:
         if peek().text == '(':
             return parse_parenthesized()
+        if peek().text == 'if':
+            return parse_control()
         if peek().type == 'int_literal':
             return parse_int_literal()
         elif peek().type == 'identifier':
@@ -115,7 +117,16 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 )
         return right
     """
-
+    def parse_control() -> ast.Expression:
+        consume('if')
+        if_expr = parse_expression()
+        consume('then')
+        then_expr = parse_expression()
+        else_expr = None
+        if peek().text == 'else':
+            consume('else')
+            else_expr = parse_expression()
+        return ast.ControlNode(if_expr, then_expr, else_expr)
 
     def parse_parenthesized() -> ast.Expression:
         consume('(')

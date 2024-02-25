@@ -19,3 +19,11 @@ class BinaryOp(Expression):
     left: Expression
     op: str
     right: Expression
+
+@dataclass
+class ControlNode(Expression):
+    """AST node for if else then, else optional"""
+    if_exp: Expression
+    then_exp: Expression
+    else_exp: Expression | None
+    

@@ -1,6 +1,6 @@
 from compiler.parser import parse
 from compiler.tokenizer import tokenize
-from compiler.ast import BinaryOp, Identifier, Literal
+from compiler.ast import BinaryOp, Identifier, Literal, ControlNode
 import unittest
 
 class ParserTest(unittest.TestCase):
@@ -50,3 +50,37 @@ class ParserTest(unittest.TestCase):
     def test_empty_input_parsed(self) -> None:
         with self.assertRaises(Exception):
             parse([])
+    
+    def test_simple_if_else_then_expressions(self) -> None:
+        if_then_else = tokenize('if a then b else c')
+        if_then = tokenize('if a then b')
+        
+        parsed_1 = parse(if_then_else)
+        parsed_2 = parse(if_then)
+        
+        assert(parsed_1 == ControlNode(if_exp=Identifier(name='a'),then_exp=Identifier(name='b'),else_exp=Identifier(name='c')))
+        assert(parsed_2 == ControlNode(if_exp=Identifier(name='a'),then_exp=Identifier(name='b'),else_exp=None))
+
+    def test_complex_if_else_then_expressions(self) -> None:
+        if_then_else = tokenize('if a then b+2 else x * y')
+        if_then = tokenize('if a then b+c')
+        
+        parsed_1 = parse(if_then_else)
+        parsed_2 = parse(if_then)
+        
+        assert(parsed_1 == ControlNode(if_exp=Identifier(name='a'), then_exp=BinaryOp(left=Identifier(name='b'),op='+',right=Literal(2)), else_exp=BinaryOp(left=Identifier(name='x'),op='*',right=Identifier(name='y'))))
+        assert(parsed_2 == ControlNode(if_exp=Identifier(name='a'), then_exp=BinaryOp(left=Identifier(name='b'),op='+',right=Identifier(name='c')), else_exp=None))
+    
+    def test_if_allowed_as_part_of_other_expressions(self) -> None:
+        expr = parse(tokenize('1 + if true then 2 else 3'))
+        assert(expr == BinaryOp(left=Literal(value=1), op='+', right=ControlNode(if_exp=Identifier(name='true'), then_exp=Literal(value=2), else_exp=Literal(value=3))))
+    
+    def test_invalid_if_else_then_expression_raises_exception(self) -> None:
+        invalid_1 = tokenize('if true 3')
+        invalid_2 = tokenize('if a then')
+        
+        with self.assertRaises(Exception):
+            parse(invalid_1)
+        
+        with self.assertRaises(Exception):
+            parse(invalid_2)
