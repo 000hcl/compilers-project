@@ -1,6 +1,6 @@
 from compiler.parser import parse
 from compiler.tokenizer import tokenize
-from compiler.ast import BinaryOp, Identifier, Literal, ControlNode
+from compiler.ast import BinaryOp, Identifier, Literal, ControlNode, FunctionNode
 import unittest
 
 class ParserTest(unittest.TestCase):
@@ -78,6 +78,31 @@ class ParserTest(unittest.TestCase):
     def test_invalid_if_else_then_expression_raises_exception(self) -> None:
         invalid_1 = tokenize('if true 3')
         invalid_2 = tokenize('if a then')
+        
+        with self.assertRaises(Exception):
+            parse(invalid_1)
+        
+        with self.assertRaises(Exception):
+            parse(invalid_2)
+    
+    def test_parse_simple_function_calls(self) -> None:
+        expr = parse(tokenize('f(a,b)'))
+        expr_2 = parse(tokenize('g(a,b,c)'))
+        assert(expr == FunctionNode(function=Identifier(name='f'),arguments=[Identifier(name='a'),Identifier(name='b')]))
+        assert(expr_2 == FunctionNode(function=Identifier(name='g'),arguments=[Identifier(name='a'),Identifier(name='b'),Identifier(name='c')]))
+        
+    def test_parse_complex_function_calls(self) -> None:
+        expr = parse(tokenize('f(a+4,c*d)'))
+        expr_2 = parse(tokenize('f(g(a))'))
+        #expr_3 = parse(tokenize('a+f(4,2-b)')) check if this should be supported?
+        
+        assert(expr == FunctionNode(function=Identifier(name='f'),arguments=[BinaryOp(left=Identifier(name='a'), op='+', right=Literal(value=4)),BinaryOp(left=Identifier(name='c'), op='*', right=Identifier(name='d'))]))
+        assert(expr_2 == FunctionNode(function=Identifier(name='f'),arguments=[FunctionNode(function=Identifier(name='g'),arguments=[Identifier(name='a')])]))
+        #assert(expr_3 == BinaryOp(left=Identifier(name='a'),op='+',right=FunctionNode(function=Identifier(name='f'), arguments=[Literal(value=4), BinaryOp(left=Literal(value=2),op='-',right=Identifier(name='b'))])))
+    
+    def test_invalid_function_calls_raise_exceptions(self) -> None:
+        invalid_1 = tokenize('f(c')
+        invalid_2 = tokenize('g)')
         
         with self.assertRaises(Exception):
             parse(invalid_1)

@@ -67,13 +67,24 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 right
             )
         return left
+    
+    def parse_function_call(function: ast.Expression) -> ast.Expression:
+        
+        consume('(')
+        arguments = [parse_expression()]
+        while peek().text == ',':
+            consume(',')
+            arguments.append(parse_expression())
+        consume(')')
+        return ast.FunctionNode(function=function, arguments=arguments)
 
     def parse_expression() -> ast.Expression:
-        #print(pos)
         left = parse_term()
         
+        if peek().text == '(':
+            left = parse_function_call(left)
+        
         while peek().text in ['+','-']:
-            print(pos)
             operator_token = consume()
             operator = operator_token.text
             

@@ -26,4 +26,8 @@ class ControlNode(Expression):
     if_exp: Expression
     then_exp: Expression
     else_exp: Expression | None
-    
+
+@dataclass
+class FunctionNode(Expression):
+    function: Expression
+    arguments: list[Expression]
