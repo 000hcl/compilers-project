@@ -109,3 +109,10 @@ class ParserTest(unittest.TestCase):
         
         with self.assertRaises(Exception):
             parse(invalid_2)
+    
+    def test_remainder_operator(self) -> None:
+        expr = parse(tokenize(r'a%b'))
+        expr_2 = parse(tokenize('2%5+a'))
+        
+        assert(expr == BinaryOp(left=Identifier('a'), op='%', right=Identifier('b')))
+        assert(expr_2 == BinaryOp(left=BinaryOp(left=Literal(2),op='%',right=Literal(5)),op='+',right=Identifier('a')))

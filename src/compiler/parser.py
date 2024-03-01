@@ -4,6 +4,12 @@ from compiler.objs.tokenclass import Token
 import compiler.ast as ast
 
 def parse(tokens: list[Token]) -> ast.Expression:
+    left_associative_binary_operators = [
+        ['+','-'],
+        ['*', '/', '%']
+    ]
+    
+    precedence_levels_binary_op = len(left_associative_binary_operators)
     pos = 0
     
     def peek() -> Token:
@@ -57,7 +63,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
 
     def parse_term() -> ast.Expression:
         left = parse_factor()
-        while peek().text in ['*', '/']:
+        while peek().text in ['*', '/', '%']:
             operator_token = consume()
             operator = operator_token.text
             right = parse_factor()
@@ -77,7 +83,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
             arguments.append(parse_expression())
         consume(')')
         return ast.FunctionNode(function=function, arguments=arguments)
-
+    """
     def parse_expression() -> ast.Expression:
         left = parse_term()
         
@@ -98,7 +104,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         
         
         return left
-    
+    """
     #TODO: testing, update to new version
     """
     def parse_expression_right() -> ast.BinaryOp:
@@ -145,7 +151,36 @@ def parse(tokens: list[Token]) -> ast.Expression:
         consume(')')
         return expr
     
+    def parse_expression(level: int = 0) -> ast.Expression:
+        nonlocal precedence_levels_binary_op
+        nonlocal left_associative_binary_operators
+        
+        if level >= precedence_levels_binary_op:
+            return parse_factor()
+        else:
+            left = parse_expression(level+1)
+        
+        if peek().text == '(':
+            left = parse_function_call(left)
+        
+        while peek().text in left_associative_binary_operators[level]:
+            operator_token = consume()
+            operator = operator_token.text
+            
+            right = parse_expression(level+1)
+            left = ast.BinaryOp(
+                left,
+                operator,
+                right
+            )
+        
+        
+        
+        return left
+            
+    
     def parse_and_handle_entire_expression() -> ast.Expression:
+        #expr = parse_expression()
         expr = parse_expression()
         #if leftover tokens, raise excpetion
         if peek().type != 'end':

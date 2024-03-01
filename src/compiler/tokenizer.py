@@ -12,7 +12,7 @@ def tokenize(source_code: str) -> list[Token]:
     wr = re.compile(r'[\n ]+')
     wr_nl = re.compile(r'[\n ]*\n')
     int_lit_r = re.compile(r'[0-9]+')
-    operator_r = re.compile(r'==|!=|<=|>=|[+-=*/]')
+    operator_r = re.compile(r'==|!=|<=|>=|[+-=*/%]')
     comment_r = re.compile(r'(#|//).*\n')
     punctuation_r = re.compile(r'[(){},;]')
     length = len(source_code)
