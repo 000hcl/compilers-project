@@ -117,3 +117,17 @@ def test_puncuation_recognized() -> None:
     ]
     
     assert tokenize(test_input) == expected
+
+def test_and_or_operators_recognized() -> None:
+    test_input = 'a and b or c'
+    
+    expected = [
+        Token('a', 'identifier', L),
+        Token('and', 'operator', L),
+        Token('b', 'identifier', L),
+        Token('or', 'operator', L),
+        Token('c', 'identifier', L)
+    ]
+    
+    assert tokenize(test_input) == expected
+    

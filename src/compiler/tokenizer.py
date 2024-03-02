@@ -12,7 +12,7 @@ def tokenize(source_code: str) -> list[Token]:
     wr = re.compile(r'[\n ]+')
     wr_nl = re.compile(r'[\n ]*\n')
     int_lit_r = re.compile(r'[0-9]+')
-    operator_r = re.compile(r'==|!=|<=|>=|[+-=*/%]')
+    operator_r = re.compile(r'==|!=|<=|>=|[<>+-=*/%]|and|or|not')
     comment_r = re.compile(r'(#|//).*\n')
     punctuation_r = re.compile(r'[(){},;]')
     length = len(source_code)
@@ -29,6 +29,9 @@ def tokenize(source_code: str) -> list[Token]:
         operator_result = operator_r.match(source_code, i)
         comment_result = comment_r.match(source_code, i)
         punctuation_result = punctuation_r.match(source_code, i)
+        
+        if operator_result:
+            print(operator_result.group())
         
         token_type = None
         
@@ -49,19 +52,22 @@ def tokenize(source_code: str) -> list[Token]:
             token_text = punctuation_result.group()
             token_type = 'punctuation'
             i = punctuation_result.end()
+        elif int_lit_result:
+            token_text = int_lit_result.group()
+            token_type = 'int_literal'
+            i = int_lit_result.end()
+        
+        elif operator_result:
+            token_text = operator_result.group()
+            token_type = 'operator'
+            i = operator_result.end()
 
         elif token_result:
             token_text = token_result.group()
             token_type = 'identifier'
             i = token_result.end()
-        elif int_lit_result:
-            token_text = int_lit_result.group()
-            token_type = 'int_literal'
-            i = int_lit_result.end()
-        elif operator_result:
-            token_text = operator_result.group()
-            token_type = 'operator'
-            i = operator_result.end()
+        
+        
         else:
             i += 1
         
@@ -74,12 +80,5 @@ def tokenize(source_code: str) -> list[Token]:
     return tokens
 
 
-#t = """def function
-#        return 20
-#    string
-#    def functionfor i in range(len(tks)):
-#    print(tks[i],expected[i])
-#        print 23
-#        return 23"""
-#tks = tokenize(test_input)
+
 

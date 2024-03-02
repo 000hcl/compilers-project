@@ -5,6 +5,10 @@ import compiler.ast as ast
 
 def parse(tokens: list[Token]) -> ast.Expression:
     left_associative_binary_operators = [
+        ['or'],
+        ['and'],
+        ['==', '!='],
+        ['<', '<=', '>', '>='],
         ['+','-'],
         ['*', '/', '%']
     ]
@@ -49,33 +53,39 @@ def parse(tokens: list[Token]) -> ast.Expression:
         token = consume()
         return ast.Identifier(token.text)
     
+    def parse_assignment(left: ast.Expression) -> ast.Expression:
+        
+        if peek().text == '=':
+            consume('=')
+            right = parse_assignment(parse_expression())
+        else:
+            return left
+        
+        return ast.BinaryOp(left=left, op='=', right=right)
+
+    
     def parse_factor() -> ast.Expression:
         if peek().text == '(':
             return parse_parenthesized()
-        if peek().text == 'if':
+        elif peek().text in ['-', 'not']:
+            return parse_unary()
+        elif peek().text == 'if':
             return parse_control()
-        if peek().type == 'int_literal':
+        elif peek().type == 'int_literal':
             return parse_int_literal()
         elif peek().type == 'identifier':
             return parse_identifier()
         else:
-            raise Exception(f'{peek().loc}: expected an integer literal or an identifier')
+            raise Exception(f'{peek().loc}: expected an integer literal or an identifier. Got {peek().type}.')
+    
+    def parse_unary() -> ast.Expression:
+        operator = peek().text
+        consume(['-','not'])
+        element = parse_expression()
+        return ast.UnaryOp(op=operator, element=element)
 
-    def parse_term() -> ast.Expression:
-        left = parse_factor()
-        while peek().text in ['*', '/', '%']:
-            operator_token = consume()
-            operator = operator_token.text
-            right = parse_factor()
-            left = ast.BinaryOp(
-                left,
-                operator,
-                right
-            )
-        return left
     
     def parse_function_call(function: ast.Expression) -> ast.Expression:
-        
         consume('(')
         arguments = [parse_expression()]
         while peek().text == ',':
@@ -83,57 +93,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
             arguments.append(parse_expression())
         consume(')')
         return ast.FunctionNode(function=function, arguments=arguments)
-    """
-    def parse_expression() -> ast.Expression:
-        left = parse_term()
-        
-        if peek().text == '(':
-            left = parse_function_call(left)
-        
-        while peek().text in ['+','-']:
-            operator_token = consume()
-            operator = operator_token.text
-            
-            right = parse_term()
-            left = ast.BinaryOp(
-                left,
-                operator,
-                right
-            )
-        
-        
-        
-        return left
-    """
-    #TODO: testing, update to new version
-    """
-    def parse_expression_right() -> ast.BinaryOp:
-        pos_copy = pos
-        #get all relevant tokens
-        expression_tokens = [consume()]
-        while peek().text in ['+','-']:
-            #consume operator
-            expression_tokens.append(consume())
-            #consume right integer
-            expression_tokens.append(consume())
-            
-        
-        #reverse list
-        expression_tokens = expression_tokens[::-1]
-        #parse
-        right = parse_term(expression_tokens[0])
-        for tkn in expression_tokens[1:]:
-            if tkn.text in ['+','-']:
-                op_token = tkn.text
-            else:
-                left = parse_term(tkn)
-                right = ast.BinaryOp(
-                    left,
-                    op_token,
-                    right
-                )
-        return right
-    """
+
     def parse_control() -> ast.Expression:
         consume('if')
         if_expr = parse_expression()
@@ -163,6 +123,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if peek().text == '(':
             left = parse_function_call(left)
         
+        #if assignment:
+        if peek().text == '=':
+            return parse_assignment(left)
+        
         while peek().text in left_associative_binary_operators[level]:
             operator_token = consume()
             operator = operator_token.text
@@ -173,7 +137,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 operator,
                 right
             )
-        
+    
         
         
         return left

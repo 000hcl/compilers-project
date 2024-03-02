@@ -31,3 +31,8 @@ class ControlNode(Expression):
 class FunctionNode(Expression):
     function: Expression
     arguments: list[Expression]
+
+@dataclass
+class UnaryOp(Expression):
+    op: str
+    element: Expression

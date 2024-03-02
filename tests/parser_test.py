@@ -1,6 +1,6 @@
 from compiler.parser import parse
 from compiler.tokenizer import tokenize
-from compiler.ast import BinaryOp, Identifier, Literal, ControlNode, FunctionNode
+from compiler.ast import BinaryOp, Identifier, Literal, ControlNode, FunctionNode, UnaryOp
 import unittest
 
 class ParserTest(unittest.TestCase):
@@ -116,3 +116,30 @@ class ParserTest(unittest.TestCase):
         
         assert(expr == BinaryOp(left=Identifier('a'), op='%', right=Identifier('b')))
         assert(expr_2 == BinaryOp(left=BinaryOp(left=Literal(2),op='%',right=Literal(5)),op='+',right=Identifier('a')))
+    
+    def test_comparison_operators(self) -> None:
+        expr = parse(tokenize('a+b == 2*3+1'))
+        expr_2 = parse(tokenize('a<b != 5'))
+        expr_3 = parse(tokenize('a>b>c'))
+        
+        assert(expr == BinaryOp(left=BinaryOp(left=Identifier('a'), op='+', right=Identifier('b')), op='==', right=BinaryOp(left=BinaryOp(left=Literal(2), op='*', right=Literal(3)),op='+',right=Literal(1))))
+        assert(expr_2 == BinaryOp(left=BinaryOp(Identifier('a'),'<',Identifier('b')), op='!=', right=Literal(5)))
+        assert(expr_3 == BinaryOp(left=BinaryOp(left=Identifier('a'),op='>',right=Identifier('b')),op='>',right=Identifier('c')))
+        
+    def test_and_or_operators(self) -> None:
+        expr = parse(tokenize('x or y and c+b'))
+        
+        assert(expr == BinaryOp(left=Identifier('x'), op='or', right=BinaryOp(left=Identifier('y'), op='and', right=BinaryOp(Identifier('c'),'+',Identifier('b')))))
+    
+    def test_unary_operators(self) -> None:
+        expr_simple = parse(tokenize('not a'))
+        expr_chained = parse(tokenize('---5'))
+        
+        assert(expr_simple == UnaryOp('not', Identifier('a')))
+        assert(expr_chained == UnaryOp('-',UnaryOp('-',UnaryOp('-',Literal(5)))))
+        
+    def test_assignment(self) -> None:
+        expr = parse(tokenize('a=3'))
+        expr_2 = parse(tokenize('a=b=c'))
+        assert(expr == BinaryOp(left=Identifier('a'), op='=', right=Literal(3)))
+        assert(expr_2 == BinaryOp(left=Identifier('a'),op='=',right=BinaryOp(Identifier('b'),op='=',right=Identifier('c'))))
