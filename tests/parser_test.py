@@ -1,6 +1,6 @@
 from compiler.parser import parse
 from compiler.tokenizer import tokenize
-from compiler.ast import BinaryOp, Identifier, Literal, ControlNode, FunctionNode, UnaryOp
+from compiler.ast import BinaryOp, Identifier, Literal, ControlNode, FunctionNode, UnaryOp, Block
 import unittest
 
 class ParserTest(unittest.TestCase):
@@ -139,7 +139,38 @@ class ParserTest(unittest.TestCase):
         assert(expr_chained == UnaryOp('-',UnaryOp('-',UnaryOp('-',Literal(5)))))
         
     def test_assignment(self) -> None:
-        expr = parse(tokenize('a=3'))
+        expr = parse(tokenize('a=322'))
         expr_2 = parse(tokenize('a=b=c'))
-        assert(expr == BinaryOp(left=Identifier('a'), op='=', right=Literal(3)))
+        assert(expr == BinaryOp(left=Identifier('a'), op='=', right=Literal(322)))
         assert(expr_2 == BinaryOp(left=Identifier('a'),op='=',right=BinaryOp(Identifier('b'),op='=',right=Identifier('c'))))
+    
+    def test_empty_block_raises_exception(self) -> None:
+        expr = tokenize(r'{}')
+        
+        with self.assertRaises(Exception):
+            parse(expr)
+    
+    def test_valid_blocks(self) -> None:
+        expr_simple = parse(tokenize(r"""
+                                     x = {
+                                         f(5);
+                                         322
+                                     }
+                                     """))
+        expr_no_res = parse(tokenize(r"""
+                                     x = {
+                                         f(5);
+                                         322;
+                                     }
+                                     """))
+        expr_block_in_block = parse(tokenize(r"""
+                                             {
+                                                 if true then {
+                                                     f(x);
+                                                 };
+                                                 g(x);
+                                             }
+                                             """))
+        assert(expr_simple) == BinaryOp(left=Identifier('x'),op='=',right=Block(expressions=[FunctionNode(function=Identifier('f'),arguments=[Literal(5)])], result=Literal(value=322)))
+        assert(expr_no_res) == BinaryOp(left=Identifier('x'),op='=',right=Block(expressions=[FunctionNode(function=Identifier('f'),arguments=[Literal(5)]),Literal(value=322)], result=Literal(value=None)))
+        assert(expr_block_in_block == Block([ControlNode(Identifier('true'), Block([FunctionNode(Identifier('f'),[Identifier('x')])],Literal(None)),None),FunctionNode(Identifier('g'),[Identifier('x')])],Literal(None)))

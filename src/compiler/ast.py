@@ -36,3 +36,8 @@ class FunctionNode(Expression):
 class UnaryOp(Expression):
     op: str
     element: Expression
+
+@dataclass
+class Block(Expression):
+    expressions: list[Expression]
+    result: Expression

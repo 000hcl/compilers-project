@@ -41,6 +41,12 @@ def parse(tokens: list[Token]) -> ast.Expression:
         pos += 1
         return token
     
+    def parse_bool_literal() -> ast.Literal:
+        if peek().type != 'int_literal':
+            raise Exception(f'{peek().loc}: expected a boolean literal')
+        token = consume()
+        return ast.Literal(bool(token.text))
+
     def parse_int_literal() -> ast.Literal:
         if peek().type != 'int_literal':
             raise Exception(f'{peek().loc}: expected an integer literal')
@@ -67,12 +73,16 @@ def parse(tokens: list[Token]) -> ast.Expression:
     def parse_factor() -> ast.Expression:
         if peek().text == '(':
             return parse_parenthesized()
+        elif peek().text == '{':
+            return parse_block()
         elif peek().text in ['-', 'not']:
             return parse_unary()
         elif peek().text == 'if':
             return parse_control()
         elif peek().type == 'int_literal':
             return parse_int_literal()
+        elif peek().type == 'bool_literal':
+            return parse_bool_literal()
         elif peek().type == 'identifier':
             return parse_identifier()
         else:
@@ -141,10 +151,25 @@ def parse(tokens: list[Token]) -> ast.Expression:
         
         
         return left
+    
+    def parse_block() -> ast.Expression:
+        expressions = []
+        consume('{')
+        expr = parse_expression()
+        while peek().text == ';':
+            expressions.append(expr)
+            consume(';')
+            if peek().text == '}':
+                expr = ast.Literal(value=None)
+            else:
+                expr = parse_expression()
+
+            
+        consume('}')
+        return ast.Block(expressions=expressions, result=expr)
             
     
     def parse_and_handle_entire_expression() -> ast.Expression:
-        #expr = parse_expression()
         expr = parse_expression()
         #if leftover tokens, raise excpetion
         if peek().type != 'end':
