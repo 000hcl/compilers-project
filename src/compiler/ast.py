@@ -41,3 +41,8 @@ class UnaryOp(Expression):
 class Block(Expression):
     expressions: list[Expression]
     result: Expression
+
+@dataclass
+class VarDec(Expression):
+    name: Identifier
+    value: Expression

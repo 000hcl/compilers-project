@@ -1,6 +1,6 @@
 from compiler.parser import parse
 from compiler.tokenizer import tokenize
-from compiler.ast import BinaryOp, Identifier, Literal, ControlNode, FunctionNode, UnaryOp, Block
+from compiler.ast import BinaryOp, Identifier, Literal, ControlNode, FunctionNode, UnaryOp, Block, VarDec
 import unittest
 
 class ParserTest(unittest.TestCase):
@@ -145,7 +145,7 @@ class ParserTest(unittest.TestCase):
         assert(expr_2 == BinaryOp(left=Identifier('a'),op='=',right=BinaryOp(Identifier('b'),op='=',right=Identifier('c'))))
     
     def test_empty_block_raises_exception(self) -> None:
-        expr = tokenize(r'{}')
+        expr = tokenize(r'{ string')
         
         with self.assertRaises(Exception):
             parse(expr)
@@ -171,6 +171,38 @@ class ParserTest(unittest.TestCase):
                                                  g(x);
                                              }
                                              """))
-        assert(expr_simple) == BinaryOp(left=Identifier('x'),op='=',right=Block(expressions=[FunctionNode(function=Identifier('f'),arguments=[Literal(5)])], result=Literal(value=322)))
-        assert(expr_no_res) == BinaryOp(left=Identifier('x'),op='=',right=Block(expressions=[FunctionNode(function=Identifier('f'),arguments=[Literal(5)]),Literal(value=322)], result=Literal(value=None)))
+        assert(expr_simple == BinaryOp(left=Identifier('x'),op='=',right=Block(expressions=[FunctionNode(function=Identifier('f'),arguments=[Literal(5)])], result=Literal(value=322))))
+        assert(expr_no_res == BinaryOp(left=Identifier('x'),op='=',right=Block(expressions=[FunctionNode(function=Identifier('f'),arguments=[Literal(5)]),Literal(value=322)], result=Literal(value=None))))
         assert(expr_block_in_block == Block([ControlNode(Identifier('true'), Block([FunctionNode(Identifier('f'),[Identifier('x')])],Literal(None)),None),FunctionNode(Identifier('g'),[Identifier('x')])],Literal(None)))
+    
+    def test_invalid_var_declarations(self) -> None:
+        invalid_1 = '{var 2 = 5}'
+        invalid_2 = '{var = w}'
+        invalid_3 = r'a = {x = y;var i = 5}'
+        invalid_4 = 'if true then var i=4 else var i=5'
+        
+        with self.assertRaises(Exception):
+            parse(tokenize(invalid_1))
+        with self.assertRaises(Exception):
+            parse(tokenize(invalid_2))
+        with self.assertRaises(Exception):
+            parse(tokenize(invalid_3))
+        with self.assertRaises(Exception):
+            parse(tokenize(invalid_4))
+    
+    def test_valid_var_declarations(self) -> None:
+        expr = parse(tokenize(r'{var i=23;}'))
+        expr_2 = parse(tokenize(r'{var c = 5+f(x);}'))
+        #TODO: Top level expressions?
+        
+        assert(expr == Block([VarDec(Identifier('i'),Literal(23))],Literal(None)))
+        assert(expr_2 == Block([VarDec(Identifier('c'),BinaryOp(Literal(5),'+',FunctionNode(Identifier('f'),[Identifier('x')])))],Literal(None)))
+    
+    def test_invalid_blocks(self) -> None:
+        invalid_1 = r'{a b}'
+        invalid_2 = r'{if true then {a} b c}'
+        
+        with self.assertRaises(Exception):
+            parse(tokenize(invalid_1))
+        with self.assertRaises(Exception):
+            parse(tokenize(invalid_2))

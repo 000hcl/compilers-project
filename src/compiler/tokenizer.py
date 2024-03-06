@@ -30,8 +30,8 @@ def tokenize(source_code: str) -> list[Token]:
         comment_result = comment_r.match(source_code, i)
         punctuation_result = punctuation_r.match(source_code, i)
         
-        if operator_result:
-            print(operator_result.group())
+        #if operator_result:
+        #    print(operator_result.group())
         
         token_type = None
         

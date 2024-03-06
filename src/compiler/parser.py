@@ -121,6 +121,17 @@ def parse(tokens: list[Token]) -> ast.Expression:
         consume(')')
         return expr
     
+    def parse_var_declaration() -> ast.Expression:
+        #assumed var x = y = z not allowed.
+        consume('var')
+        name = parse_identifier()
+        print('NAME',name)
+        consume('=')
+        value = parse_expression()
+        
+        return ast.VarDec(name=name, value=value)
+        
+    
     def parse_expression(level: int = 0) -> ast.Expression:
         nonlocal precedence_levels_binary_op
         nonlocal left_associative_binary_operators
@@ -155,16 +166,24 @@ def parse(tokens: list[Token]) -> ast.Expression:
     def parse_block() -> ast.Expression:
         expressions = []
         consume('{')
-        expr = parse_expression()
+        if peek().text == 'var':
+            expr = parse_var_declaration()
+        else:
+            expr = parse_expression()
         while peek().text == ';':
             expressions.append(expr)
             consume(';')
             if peek().text == '}':
                 expr = ast.Literal(value=None)
             else:
-                expr = parse_expression()
+                if peek().text == 'var':
+                    expr = parse_var_declaration()
+                else:
+                    expr = parse_expression()
 
-            
+        #result should not be var declaration?
+        if isinstance(expr, ast.VarDec):
+            raise Exception(f'Result should not be a variable declaration.')
         consume('}')
         return ast.Block(expressions=expressions, result=expr)
             
