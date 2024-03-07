@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from compiler.objs.location import Location
 
 @dataclass
 class Expression:

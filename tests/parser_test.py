@@ -144,7 +144,7 @@ class ParserTest(unittest.TestCase):
         assert(expr == BinaryOp(left=Identifier('a'), op='=', right=Literal(322)))
         assert(expr_2 == BinaryOp(left=Identifier('a'),op='=',right=BinaryOp(Identifier('b'),op='=',right=Identifier('c'))))
     
-    def test_empty_block_raises_exception(self) -> None:
+    def test_erroneous_block_raises_exception(self) -> None:
         expr = tokenize(r'{ string')
         
         with self.assertRaises(Exception):
@@ -206,3 +206,19 @@ class ParserTest(unittest.TestCase):
             parse(tokenize(invalid_1))
         with self.assertRaises(Exception):
             parse(tokenize(invalid_2))
+    
+    def test_valid_blocks_optional_semicolon(self) -> None:
+        expr_1 = parse(tokenize(r'{{a;}{b;}}'))
+        expr_2 = parse(tokenize(r'{ if true then { a } b }'))
+        expr_3 = parse(tokenize(r'{ if true then { a }; b }'))
+        expr_4 = parse(tokenize(r'{ if true then { a } b; c }'))
+        expr_5 = parse(tokenize(r'{ if true then { a } else { b } 3 }'))
+        expr_6 = parse(tokenize(r'x = { { f(a) } { b } }'))
+        
+        assert(expr_1 == Block([Block([Identifier('a')],Literal(None))], Block([Identifier('b')],Literal(None))))
+        assert(expr_2 == Block([ControlNode(Identifier('true'),Block([],Identifier('a')),None)],Identifier('b')))
+        assert(expr_3 == Block([ControlNode(Identifier('true'),Block([],Identifier('a')),None)],Identifier('b')))
+        assert(expr_4 == Block([ControlNode(Identifier('true'),Block([],Identifier('a')),None),Identifier('b')],Identifier('c')))
+        assert(expr_5 == Block([ControlNode(Identifier('true'),Block([],Identifier('a')),Block([],Identifier('b')))],Literal(3)))
+        assert(expr_6 == BinaryOp(Identifier('x'),'=',Block([Block([],FunctionNode(Identifier('f'),[Identifier('a')]))],Block([],Identifier('b')))))
+        

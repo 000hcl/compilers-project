@@ -30,10 +30,21 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 text=''
             )
     
+    def lookback() -> Token:
+        if pos > 0:
+            return tokens[pos-1]
+        else:
+            #should never actually be used
+            return Token(
+                loc = None,
+                type='start',
+                text=''
+            )
+    
     def consume(expected: str | list[str] | None = None) -> Token:
         token = peek()
         if isinstance(expected, str) and token.text != expected:
-            raise Exception(f'{token.loc}: expected "{expected}"')
+            raise Exception(f'{token.loc}: expected "{expected}", got {token.text}')
         if isinstance(expected, list) and token.text not in expected:
             comma_separated = ", ".join([f'"{e}"' for e in expected])
             raise Exception(f'{token.loc}: expected one of: {comma_separated}')
@@ -164,15 +175,20 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return left
     
     def parse_block() -> ast.Expression:
-        expressions = []
+        expressions: list[ast.Expression] = []
         consume('{')
         if peek().text == 'var':
             expr = parse_var_declaration()
         else:
             expr = parse_expression()
-        while peek().text == ';':
+
+
+        
+        while (peek().text == ';' or (lookback().text == '}' and (peek().text not in [';','}']))):
+
             expressions.append(expr)
-            consume(';')
+            if peek().text == ';':
+                consume(';')
             if peek().text == '}':
                 expr = ast.Literal(value=None)
             else:
