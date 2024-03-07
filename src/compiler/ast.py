@@ -4,6 +4,7 @@ from compiler.objs.location import Location
 @dataclass
 class Expression:
     """Base class for AST nodes representing expressions."""
+    location: Location
 
 @dataclass
 class Literal(Expression):

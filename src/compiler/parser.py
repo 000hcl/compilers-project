@@ -56,19 +56,19 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if peek().type != 'int_literal':
             raise Exception(f'{peek().loc}: expected a boolean literal')
         token = consume()
-        return ast.Literal(bool(token.text))
+        return ast.Literal(value=bool(token.text), location=token.loc)
 
     def parse_int_literal() -> ast.Literal:
         if peek().type != 'int_literal':
             raise Exception(f'{peek().loc}: expected an integer literal')
         token = consume()
-        return ast.Literal(int(token.text))
+        return ast.Literal(value=int(token.text), location=token.loc)
     
     def parse_identifier() -> ast.Identifier:
         if peek().type != 'identifier':
             raise Exception(f'{peek().loc}: expected an identifier')
         token = consume()
-        return ast.Identifier(token.text)
+        return ast.Identifier(name=token.text, location=token.loc)
     
     def parse_assignment(left: ast.Expression) -> ast.Expression:
         
@@ -78,7 +78,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         else:
             return left
         
-        return ast.BinaryOp(left=left, op='=', right=right)
+        return ast.BinaryOp(left=left, op='=', right=right, location=left.location)
 
     
     def parse_factor() -> ast.Expression:
@@ -101,9 +101,9 @@ def parse(tokens: list[Token]) -> ast.Expression:
     
     def parse_unary() -> ast.Expression:
         operator = peek().text
-        consume(['-','not'])
+        not_token = consume(['-','not'])
         element = parse_expression()
-        return ast.UnaryOp(op=operator, element=element)
+        return ast.UnaryOp(op=operator, element=element, location=not_token.loc)
 
     
     def parse_function_call(function: ast.Expression) -> ast.Expression:
@@ -113,10 +113,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
             consume(',')
             arguments.append(parse_expression())
         consume(')')
-        return ast.FunctionNode(function=function, arguments=arguments)
+        return ast.FunctionNode(function=function, arguments=arguments, location=function.location)
 
     def parse_control() -> ast.Expression:
-        consume('if')
+        start_token = consume('if')
         if_expr = parse_expression()
         consume('then')
         then_expr = parse_expression()
@@ -124,7 +124,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if peek().text == 'else':
             consume('else')
             else_expr = parse_expression()
-        return ast.ControlNode(if_expr, then_expr, else_expr)
+        return ast.ControlNode(if_exp=if_expr, then_exp=then_expr, else_exp=else_expr, location=start_token.loc)
 
     def parse_parenthesized() -> ast.Expression:
         consume('(')
@@ -134,13 +134,13 @@ def parse(tokens: list[Token]) -> ast.Expression:
     
     def parse_var_declaration() -> ast.Expression:
         #assumed var x = y = z not allowed.
-        consume('var')
+        start_token = consume('var')
         name = parse_identifier()
         print('NAME',name)
         consume('=')
         value = parse_expression()
         
-        return ast.VarDec(name=name, value=value)
+        return ast.VarDec(name=name, value=value, location=start_token.loc)
         
     
     def parse_expression(level: int = 0) -> ast.Expression:
@@ -165,9 +165,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
             
             right = parse_expression(level+1)
             left = ast.BinaryOp(
-                left,
-                operator,
-                right
+                left=left,
+                op=operator,
+                right=right,
+                location=left.location
             )
     
         
@@ -176,7 +177,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
     
     def parse_block() -> ast.Expression:
         expressions: list[ast.Expression] = []
-        consume('{')
+        start_token = consume('{')
         if peek().text == 'var':
             expr = parse_var_declaration()
         else:
@@ -190,7 +191,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
             if peek().text == ';':
                 consume(';')
             if peek().text == '}':
-                expr = ast.Literal(value=None)
+                expr = ast.Literal(value=None, location=peek().loc)
             else:
                 if peek().text == 'var':
                     expr = parse_var_declaration()
@@ -201,7 +202,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if isinstance(expr, ast.VarDec):
             raise Exception(f'Result should not be a variable declaration.')
         consume('}')
-        return ast.Block(expressions=expressions, result=expr)
+        return ast.Block(expressions=expressions, result=expr, location=start_token.loc)
             
     
     def parse_and_handle_entire_expression() -> ast.Expression:
