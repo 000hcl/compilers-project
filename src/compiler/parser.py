@@ -53,10 +53,16 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return token
     
     def parse_bool_literal() -> ast.Literal:
-        if peek().type != 'int_literal':
+        if peek().type != 'bool_literal':
             raise Exception(f'{peek().loc}: expected a boolean literal')
         token = consume()
-        return ast.Literal(value=bool(token.text), location=token.loc)
+        if token.text == 'true':
+            value = True
+        elif token.text == 'false':
+            value = False
+        else:
+            raise Exception(f'{token.loc}: Expected "true" or "false", got {token.text}.')
+        return ast.Literal(value=value, location=token.loc)
 
     def parse_int_literal() -> ast.Literal:
         if peek().type != 'int_literal':
