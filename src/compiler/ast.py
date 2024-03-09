@@ -4,7 +4,7 @@ from compiler.objs.location import Location
 @dataclass
 class Expression:
     """Base class for AST nodes representing expressions."""
-    location: Location
+    location: Location | None
 
 @dataclass
 class Literal(Expression):
@@ -14,6 +14,7 @@ class Literal(Expression):
 @dataclass
 class Identifier(Expression):
     name: str
+    type: None = None
 
 @dataclass
 class BinaryOp(Expression):
@@ -48,3 +49,8 @@ class Block(Expression):
 class VarDec(Expression):
     name: Identifier
     value: Expression
+
+@dataclass
+class Loop(Expression):
+    while_exp: Expression
+    do_exp: Expression

@@ -34,7 +34,6 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if pos > 0:
             return tokens[pos-1]
         else:
-            #should never actually be used
             return Token(
                 loc = None,
                 type='start',
@@ -96,6 +95,8 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return parse_unary()
         elif peek().text == 'if':
             return parse_control()
+        elif peek().text == 'while':
+            return parse_loop()
         elif peek().type == 'int_literal':
             return parse_int_literal()
         elif peek().type == 'bool_literal':
@@ -103,7 +104,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         elif peek().type == 'identifier':
             return parse_identifier()
         else:
-            raise Exception(f'{peek().loc}: expected an integer literal or an identifier. Got {peek().type}.')
+            raise Exception(f'{peek().loc}: expected an integer literal or an identifier. Got {peek().type} "{peek().text}".')
     
     def parse_unary() -> ast.Expression:
         operator = peek().text
@@ -114,7 +115,9 @@ def parse(tokens: list[Token]) -> ast.Expression:
     
     def parse_function_call(function: ast.Expression) -> ast.Expression:
         consume('(')
-        arguments = [parse_expression()]
+        arguments = []
+        if peek().text != ')':
+            arguments.append(parse_expression())
         while peek().text == ',':
             consume(',')
             arguments.append(parse_expression())
@@ -142,11 +145,18 @@ def parse(tokens: list[Token]) -> ast.Expression:
         #assumed var x = y = z not allowed.
         start_token = consume('var')
         name = parse_identifier()
-        print('NAME',name)
         consume('=')
         value = parse_expression()
         
         return ast.VarDec(name=name, value=value, location=start_token.loc)
+    
+    def parse_loop() -> ast.Expression:
+        start_token = consume('while')
+        while_exp = parse_expression()
+        consume('do')
+        do_exp = parse_expression()
+        
+        return ast.Loop(location=start_token.loc, while_exp=while_exp,do_exp=do_exp)
         
     
     def parse_expression(level: int = 0) -> ast.Expression:
@@ -176,9 +186,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 right=right,
                 location=left.location
             )
-    
-        
-        
+
         return left
     
     def parse_block() -> ast.Expression:
@@ -186,18 +194,18 @@ def parse(tokens: list[Token]) -> ast.Expression:
         start_token = consume('{')
         if peek().text == 'var':
             expr = parse_var_declaration()
-        else:
+        elif peek().text != '}':
             expr = parse_expression()
+        else:
+            expr = ast.Literal(value=None, location=None)
 
-
-        
         while (peek().text == ';' or (lookback().text == '}' and (peek().text not in [';','}']))):
 
             expressions.append(expr)
             if peek().text == ';':
                 consume(';')
             if peek().text == '}':
-                expr = ast.Literal(value=None, location=peek().loc)
+                expr = ast.Literal(value=None, location=None)
             else:
                 if peek().text == 'var':
                     expr = parse_var_declaration()
@@ -206,13 +214,58 @@ def parse(tokens: list[Token]) -> ast.Expression:
 
         #result should not be var declaration?
         if isinstance(expr, ast.VarDec):
-            raise Exception(f'Result should not be a variable declaration.')
+            raise Exception(f'{expr.location}: Result should not be a variable declaration.')
         consume('}')
         return ast.Block(expressions=expressions, result=expr, location=start_token.loc)
             
     
+    def parse_top_level() -> ast.Expression:
+        expressions: list[ast.Expression] = []
+
+        """if peek().text == 'var':
+            expr = parse_var_declaration()
+            expressions.append(expr)
+        elif peek().type != 'end':
+            expr = parse_expression()
+            expressions.append(expr)
+
+        while (peek().text == ';' or (lookback().text == '}' and ((peek().text not in [';','}']) or peek().type != 'end'))):
+            
+            if peek().text == ';':
+                consume(';')
+            else:
+                if peek().text == 'var':
+                    expr = parse_var_declaration()
+                    expressions.append(expr)
+                else:
+                    expr = parse_expression()
+                    expressions.append(expr)
+                print(expr)"""
+        while True:
+            if peek().type == 'end':
+                break
+            if lookback().text not in [';','}'] and lookback().type!='start' and peek().type != 'end':
+                break
+            if peek().text == 'var':
+                expr = parse_var_declaration()
+            else:
+                expr = parse_expression()
+            if lookback().text != '}':
+                consume(';')
+            expressions.append(expr)
+
+        if len(expressions)>0:
+            start = expressions[0].location
+        else:
+            start = None
+        
+        if len(expressions) == 1:
+            return expressions[0]
+        else:
+            return ast.Block(expressions=expressions, result=ast.Literal(None,None), location=start)
+    
     def parse_and_handle_entire_expression() -> ast.Expression:
-        expr = parse_expression()
+        expr = parse_top_level()
         #if leftover tokens, raise excpetion
         if peek().type != 'end':
             raise Exception(f'{peek().loc}: Unexpected token. Could not parse: {peek().type} "{peek().text}".')
