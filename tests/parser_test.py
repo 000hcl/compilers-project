@@ -1,6 +1,6 @@
 from compiler.parser import parse
 from compiler.tokenizer import tokenize
-from compiler.ast import BinaryOp, Identifier, Literal, ControlNode, FunctionNode, UnaryOp, Block, VarDec, Loop
+from compiler.ast import BinaryOp, Identifier, Literal, IfThenElse, FunctionNode, UnaryOp, Block, VarDec, Loop
 from compiler.objs.location import Location, L
 import unittest
 
@@ -49,31 +49,31 @@ class ParserTest(unittest.TestCase):
             parse(tokens_2)
     
     
-    def test_simple_if_else_then_expressions(self) -> None:
+    def test_simple_if_else_then_branchessions(self) -> None:
         if_then_else = tokenize('if a then b else c;')
         if_then = tokenize('if a then b;')
         
         parsed_1 = parse(if_then_else)
         parsed_2 = parse(if_then)
         
-        assert(parsed_1 == ControlNode(location=L, if_exp=Identifier(location=L,name='a'),then_exp=Identifier(location=L,name='b'),else_exp=Identifier(location=L,name='c')))
-        assert(parsed_2 == ControlNode(location=L, if_exp=Identifier(location=L,name='a'),then_exp=Identifier(location=L,name='b'),else_exp=None))
+        assert(parsed_1 == IfThenElse(location=L, condition=Identifier(location=L,name='a'),then_branch=Identifier(location=L,name='b'),else_branch=Identifier(location=L,name='c')))
+        assert(parsed_2 == IfThenElse(location=L, condition=Identifier(location=L,name='a'),then_branch=Identifier(location=L,name='b'),else_branch=None))
 
-    def test_complex_if_else_then_expressions(self) -> None:
+    def test_complex_if_else_then_branchessions(self) -> None:
         if_then_else = tokenize('if a then b+2 else x * y;')
         if_then = tokenize('if a then b+c;')
         
         parsed_1 = parse(if_then_else)
         parsed_2 = parse(if_then)
         
-        assert(parsed_1 == ControlNode(location=L, if_exp=Identifier(location=L,name='a'), then_exp=BinaryOp(location=L,left=Identifier(location=L,name='b'),op='+',right=Literal(L,2)), else_exp=BinaryOp(location=L,left=Identifier(location=L,name='x'),op='*',right=Identifier(location=L,name='y'))))
-        assert(parsed_2 == ControlNode(location=L, if_exp=Identifier(location=L,name='a'), then_exp=BinaryOp(location=L,left=Identifier(location=L,name='b'),op='+',right=Identifier(location=L,name='c')), else_exp=None))
+        assert(parsed_1 == IfThenElse(location=L, condition=Identifier(location=L,name='a'), then_branch=BinaryOp(location=L,left=Identifier(location=L,name='b'),op='+',right=Literal(L,2)), else_branch=BinaryOp(location=L,left=Identifier(location=L,name='x'),op='*',right=Identifier(location=L,name='y'))))
+        assert(parsed_2 == IfThenElse(location=L, condition=Identifier(location=L,name='a'), then_branch=BinaryOp(location=L,left=Identifier(location=L,name='b'),op='+',right=Identifier(location=L,name='c')), else_branch=None))
     
     def test_if_allowed_as_part_of_other_expressions(self) -> None:
         expr = parse(tokenize('1 + if true then 2 else 3;'))
-        assert(expr == BinaryOp(location=L,left=Literal(location=L,value=1), op='+', right=ControlNode(location=L, if_exp=Literal(L,True), then_exp=Literal(location=L,value=2), else_exp=Literal(location=L,value=3))))
+        assert(expr == BinaryOp(location=L,left=Literal(location=L,value=1), op='+', right=IfThenElse(location=L, condition=Literal(L,True), then_branch=Literal(location=L,value=2), else_branch=Literal(location=L,value=3))))
     
-    def test_invalid_if_else_then_expression_raises_exception(self) -> None:
+    def test_invalid_if_else_then_branchession_raises_exception(self) -> None:
         invalid_1 = tokenize('if true 3')
         invalid_2 = tokenize('if a then')
         
@@ -171,7 +171,7 @@ class ParserTest(unittest.TestCase):
                                              """))
         assert(expr_simple == BinaryOp(location=L,left=Identifier(L,'x'),op='=',right=Block(location=L,expressions=[FunctionNode(location=L, function=Identifier(L,'f'),arguments=[Literal(L,5)])], result=Literal(location=L,value=322))))
         assert(expr_no_res == BinaryOp(location=L,left=Identifier(L,'x'),op='=',right=Block(location=L,expressions=[FunctionNode(location=L, function=Identifier(L,'f'),arguments=[Literal(L,5)]),Literal(location=L,value=322)], result=Literal(location=None,value=None))))
-        assert(expr_block_in_block == Block(L,[ControlNode(L,Literal(L,True), Block(L,[FunctionNode(L,Identifier(L,'f'),[Identifier(L,'x')])],Literal(None,None)),None),FunctionNode(L,Identifier(L,'g'),[Identifier(L,'x')])],Literal(None,None)))
+        assert(expr_block_in_block == Block(L,[IfThenElse(L,Literal(L,True), Block(L,[FunctionNode(L,Identifier(L,'f'),[Identifier(L,'x')])],Literal(None,None)),None),FunctionNode(L,Identifier(L,'g'),[Identifier(L,'x')])],Literal(None,None)))
     
     def test_invalid_var_declarations(self) -> None:
         invalid_1 = '{var 2 = 5}'
@@ -214,17 +214,17 @@ class ParserTest(unittest.TestCase):
         expr_6 = parse(tokenize(r'x = { { f(a) } { b } }'))
         
         assert(expr_1 == Block(L,[Block(L,[Identifier(L,'a')],Literal(None,None))], Block(L,[Identifier(L,'b')],Literal(None,None))))
-        assert(expr_2 == Block(L,[ControlNode(L,Literal(L,True),Block(L,[],Identifier(L,'a')),None)],Identifier(L,'b')))
-        assert(expr_3 == Block(L,[ControlNode(L,Literal(L,True),Block(L,[],Identifier(L,'a')),None)],Identifier(L,'b')))
-        assert(expr_4 == Block(L,[ControlNode(L,Literal(L,True),Block(L,[],Identifier(L,'a')),None),Identifier(L,'b')],Identifier(L,'c')))
-        assert(expr_5 == Block(L,[ControlNode(L,Literal(L,True),Block(L,[],Identifier(L,'a')),Block(L,[],Identifier(L,'b')))],Literal(L,3)))
+        assert(expr_2 == Block(L,[IfThenElse(L,Literal(L,True),Block(L,[],Identifier(L,'a')),None)],Identifier(L,'b')))
+        assert(expr_3 == Block(L,[IfThenElse(L,Literal(L,True),Block(L,[],Identifier(L,'a')),None)],Identifier(L,'b')))
+        assert(expr_4 == Block(L,[IfThenElse(L,Literal(L,True),Block(L,[],Identifier(L,'a')),None),Identifier(L,'b')],Identifier(L,'c')))
+        assert(expr_5 == Block(L,[IfThenElse(L,Literal(L,True),Block(L,[],Identifier(L,'a')),Block(L,[],Identifier(L,'b')))],Literal(L,3)))
         assert(expr_6 == BinaryOp(L,Identifier(L,'x'),'=',Block(L,[Block(L,[],FunctionNode(L,Identifier(L,'f'),[Identifier(L,'a')]))],Block(L,[],Identifier(L,'b')))))
         
         
     def test_locations(self) -> None:
         expr = parse(tokenize('if true then {a+f(5);}'))
         
-        assert(expr == ControlNode(location=Location('Null', 0,0),if_exp=Literal(Location('Null', 0,3),True),then_exp=Block(Location('Null', 0,13),[BinaryOp(Location('Null', 0,14),Identifier(Location('Null', 0,14),'a'),'+',FunctionNode(Location('Null', 0,16),Identifier(Location('Null', 0,16),'f'),[Literal(Location('Null', 0,18),5)]))],Literal(None,None)), else_exp=None))
+        assert(expr == IfThenElse(location=Location('Null', 0,0),condition=Literal(Location('Null', 0,3),True),then_branch=Block(Location('Null', 0,13),[BinaryOp(Location('Null', 0,14),Identifier(Location('Null', 0,14),'a'),'+',FunctionNode(Location('Null', 0,16),Identifier(Location('Null', 0,16),'f'),[Literal(Location('Null', 0,18),5)]))],Literal(None,None)), else_branch=None))
     
     def test_empty_blocks(self) -> None:
         expr = parse(tokenize(r'{}'))

@@ -126,14 +126,14 @@ def parse(tokens: list[Token]) -> ast.Expression:
 
     def parse_control() -> ast.Expression:
         start_token = consume('if')
-        if_expr = parse_expression()
+        conditionr = parse_expression()
         consume('then')
-        then_expr = parse_expression()
-        else_expr = None
+        then_branch = parse_expression()
+        else_branch = None
         if peek().text == 'else':
             consume('else')
-            else_expr = parse_expression()
-        return ast.ControlNode(if_exp=if_expr, then_exp=then_expr, else_exp=else_expr, location=start_token.loc)
+            else_branch = parse_expression()
+        return ast.IfThenElse(condition=conditionr, then_branch=then_branch, else_branch=else_branch, location=start_token.loc)
 
     def parse_parenthesized() -> ast.Expression:
         consume('(')
@@ -221,26 +221,6 @@ def parse(tokens: list[Token]) -> ast.Expression:
     
     def parse_top_level() -> ast.Expression:
         expressions: list[ast.Expression] = []
-
-        """if peek().text == 'var':
-            expr = parse_var_declaration()
-            expressions.append(expr)
-        elif peek().type != 'end':
-            expr = parse_expression()
-            expressions.append(expr)
-
-        while (peek().text == ';' or (lookback().text == '}' and ((peek().text not in [';','}']) or peek().type != 'end'))):
-            
-            if peek().text == ';':
-                consume(';')
-            else:
-                if peek().text == 'var':
-                    expr = parse_var_declaration()
-                    expressions.append(expr)
-                else:
-                    expr = parse_expression()
-                    expressions.append(expr)
-                print(expr)"""
         while True:
             if peek().type == 'end':
                 break

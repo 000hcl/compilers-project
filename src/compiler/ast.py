@@ -24,11 +24,11 @@ class BinaryOp(Expression):
     right: Expression
 
 @dataclass
-class ControlNode(Expression):
+class IfThenElse(Expression):
     """AST node for if else then, else optional"""
-    if_exp: Expression
-    then_exp: Expression
-    else_exp: Expression | None
+    condition: Expression
+    then_branch: Expression
+    else_branch: Expression | None
 
 @dataclass
 class FunctionNode(Expression):
