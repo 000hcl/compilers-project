@@ -1,8 +1,16 @@
-from typing import Any, TypeAlias
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Any, TypeAlias, TypeVar
+
 from compiler import ast
 
 Value:TypeAlias = int | bool | None
-"""
+
+@dataclass
+class SymTab:
+    locals: dict = field(default_factory=dict)
+    parent: SymTab | None = None
+
 def interpret(node: ast.Expression) -> Value:
     match node:
         case ast.Literal():
@@ -17,11 +25,15 @@ def interpret(node: ast.Expression) -> Value:
                 return a < b
             else:
                 raise Exception('exp')
-
+            
         case ast.IfThenElse():
             if interpret(node.condition):
                 return interpret(node.then_branch)
             else:
-                return interpret(node.else_branch)
+                if isinstance(node.else_branch, ast.Expression):
+                    return interpret(node.else_branch)
+                else:
+                    return None
 
-"""
+
+    raise Exception('Unexpected node')
