@@ -1,6 +1,6 @@
 from compiler.parser import parse
 from compiler.tokenizer import tokenize
-from compiler.ast import BinaryOp, Identifier, Literal, IfThenElse, FunctionNode, UnaryOp, Block, VarDec, Loop, Assignment
+from compiler.ast import BinaryOp, Identifier, Literal, IfThenElse, FunctionNode, UnaryOp, Block, VarDec, Loop, Assignment, SimpleType, TypeFunction
 from compiler.objs.location import Location, L
 import unittest
 
@@ -292,3 +292,9 @@ class ParserTest(unittest.TestCase):
 
 
                        """))
+    
+    def test_typed_var_declarations(self) -> None:
+        expr = parse(tokenize('var x: Int = 5;'))
+        expr_2 = parse(tokenize('var x: (Int)=>Int = 5;'))
+        assert(expr == VarDec(L,Identifier(L,'x'),Literal(L,5),SimpleType(Identifier(L,'x'),L,'Int')))
+        assert(expr_2 == VarDec(L,Identifier(L,'x'),Literal(L,5),TypeFunction(Identifier(L,'x'),L,[SimpleType(Identifier(L,'x'),L,'Int')],SimpleType(Identifier(L,'x'),L,'Int'))))

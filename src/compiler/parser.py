@@ -144,10 +144,37 @@ def parse(tokens: list[Token]) -> ast.Expression:
         #assumed var x = y = z not allowed.
         start_token = consume('var')
         name = parse_identifier()
+        var_type = None
+        if peek().text != '=':
+            consume(':')
+            var_type = parse_type_expression(name)
         consume('=')
         value = parse_expression()
         
-        return ast.VarDec(name=name, value=value, location=start_token.loc)
+        
+        return ast.VarDec(name=name, value=value, location=start_token.loc, dec_type=var_type)
+    
+    def parse_type_expression(var: ast.Identifier) -> ast.TypeExpr:
+        if peek().text in ['Int','Bool','Unit']:
+            token = consume()
+            return ast.SimpleType(var, token.loc ,token.text)
+        elif peek().text == '(':
+            params = []
+            first = consume('(')
+            params.append(parse_type_expression(var))
+            while peek().text == ',':
+                consume(',')
+                params.append(parse_type_expression(var))
+            consume(')')
+            consume('=')
+            consume('>')
+            
+            result = parse_type_expression(var)
+            return ast.TypeFunction(var, first.loc, params, result)
+        else:
+            raise Exception(f'{peek().loc}: Could not parse type "{peek().text}".')
+
+        
     
     def parse_loop() -> ast.Expression:
         start_token = consume('while')

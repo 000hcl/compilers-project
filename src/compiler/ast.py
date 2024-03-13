@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from compiler.objs.location import Location
+from compiler.objs.types import Type
 
 @dataclass
 class Expression:
     """Base class for AST nodes representing expressions."""
     location: Location | None
+
 
 @dataclass
 class Literal(Expression):
@@ -15,6 +17,12 @@ class Literal(Expression):
 class Identifier(Expression):
     name: str
     type: None = None
+
+@dataclass
+class TypeExpr:
+    """Base class for type expressions."""
+    variable: Identifier
+    location: Location
 
 @dataclass
 class BinaryOp(Expression):
@@ -49,6 +57,7 @@ class Block(Expression):
 class VarDec(Expression):
     name: Identifier
     value: Expression
+    dec_type: TypeExpr | None = None
 
 @dataclass
 class Loop(Expression):
@@ -59,3 +68,17 @@ class Loop(Expression):
 class Assignment(Expression):
     left: Expression
     right: Expression
+
+
+
+
+
+@dataclass
+class SimpleType(TypeExpr):
+    type_name: str
+
+@dataclass
+class TypeFunction(TypeExpr):
+    parameters: list[TypeExpr]
+    result: TypeExpr
+    
