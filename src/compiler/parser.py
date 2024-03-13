@@ -82,8 +82,8 @@ def parse(tokens: list[Token]) -> ast.Expression:
             right = parse_assignment(parse_expression())
         else:
             return left
-        
-        return ast.BinaryOp(left=left, op='=', right=right, location=left.location)
+        return ast.Assignment(location=left.location, left=left, right=right)
+        #return ast.BinaryOp(left=left, op='=', right=right, location=left.location)
 
     
     def parse_factor() -> ast.Expression:
@@ -112,8 +112,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         element = parse_expression()
         return ast.UnaryOp(op=operator, element=element, location=not_token.loc)
 
-    
-    def parse_function_call(function: ast.Expression) -> ast.Expression:
+    def parse_function_call(function: ast.Identifier) -> ast.Expression:
         consume('(')
         arguments = []
         if peek().text != ')':
@@ -168,7 +167,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         else:
             left = parse_expression(level+1)
         
-        if peek().text == '(':
+        if peek().text == '(' and isinstance(left, ast.Identifier):
             left = parse_function_call(left)
         
         #if assignment:

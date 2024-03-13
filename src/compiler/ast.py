@@ -32,7 +32,7 @@ class IfThenElse(Expression):
 
 @dataclass
 class FunctionNode(Expression):
-    function: Expression
+    function: Identifier
     arguments: list[Expression]
 
 @dataclass
@@ -54,3 +54,8 @@ class VarDec(Expression):
 class Loop(Expression):
     while_exp: Expression
     do_exp: Expression
+
+@dataclass
+class Assignment(Expression):
+    left: Expression
+    right: Expression

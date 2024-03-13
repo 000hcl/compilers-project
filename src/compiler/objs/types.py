@@ -9,9 +9,15 @@ class IntegerType(Type):
 class BooleanType(Type):
     """Class for booleans."""
 
-class FunctionType(Type):
+@dataclass
+class FunType(Type):
     """Class for functions."""
+    parameters: list[Type]
+    result: Type
+
+class UnitType(Type):
+    """Class for unit."""
 
 Int = IntegerType()
 Bool = BooleanType()
-FunType = FunctionType()
+Unit = UnitType()

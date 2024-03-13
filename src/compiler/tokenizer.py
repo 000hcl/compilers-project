@@ -65,15 +65,12 @@ def tokenize(source_code: str) -> list[Token]:
             token_text = operator_result.group()
             token_type = 'operator'
             i = operator_result.end()
-        
-
 
         elif token_result:
             token_text = token_result.group()
             token_type = 'identifier'
             i = token_result.end()
-        
-        
+
         else:
             i += 1
         
@@ -84,7 +81,3 @@ def tokenize(source_code: str) -> list[Token]:
             tokens.append(token)
 
     return tokens
-
-
-
-
