@@ -138,7 +138,6 @@ class TypeCheckerTest(unittest.TestCase):
     
     def test_while_loop(self) -> None:
         valid = typecheck(parse(tokenize(r'while true do {print_int(23);}')))
-        #TODO: check if valid:
         valid_2 = typecheck(parse(tokenize(r'while true do {print_int(23);45}')))
         invalid = parse(tokenize(r'while 23 do {print_int(23);}'))
 
@@ -146,5 +145,16 @@ class TypeCheckerTest(unittest.TestCase):
             typecheck(invalid)
         
         assert(valid == Unit)
-        assert(valid_2 == Int)
+        assert(valid_2 == Unit)
+    
+    def test_simple_typed_var_declarations(self) -> None:
+        valid = typecheck(parse(tokenize('var x: Int = 5+5;')))
+        valid_2 = typecheck(parse(tokenize('var x: Bool = 5==5;')))
+        invalid = parse(tokenize('var x:Bool = 23;'))
+        
+        assert(valid == Int)
+        assert(valid_2 == Bool)
+        
+        with self.assertRaises(Exception):
+            typecheck(invalid)
         

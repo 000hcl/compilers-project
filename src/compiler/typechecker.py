@@ -53,6 +53,22 @@ class SymTab:
             return True
 
 
+def construct_type_exp(type_exp: ast.TypeExpr) -> Type:
+    if isinstance(type_exp, ast.SimpleType):
+        if type_exp.type_name == 'Int':
+            return Int
+        elif type_exp.type_name == 'Bool':
+            return Bool
+        elif type_exp.type_name == 'Unit':
+            return Unit
+    elif isinstance(type_exp, ast.TypeFunction):
+        params = []
+        for param in type_exp.parameters:
+            params.append(construct_type_exp(param))
+        result = construct_type_exp(type_exp.result)
+        return FunType(params, result)
+    raise Exception(f'{type_exp.location}: Unrecognized type "{type_exp}".')
+
 def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
     match node:
         case ast.Literal():
@@ -77,10 +93,17 @@ def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
             
             #if tab.locals.get(name) is not None:
             #    raise Exception(f'{node.location}: Variable has already been declared.')
-            
-            node_type = typecheck(node.value, tab)
-            tab.locals[name] = node_type
-            return node_type
+            value_type = typecheck(node.value, tab)
+            if node.dec_type is None:
+                node_type = value_type
+            else:
+                node_type = construct_type_exp(node.dec_type)
+            #only supports var x:Int/Bool/Unit = ...; declarations
+            if value_type == node_type:
+                tab.locals[name] = node_type
+                return node_type
+            else:
+                raise Exception(f'{node.location}: Incompatible types: {value_type} and {node_type}.')
         
         case ast.Block():
             child_tab = SymTab({}, tab)
@@ -158,7 +181,8 @@ def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
             t1 = typecheck(node.while_exp, tab)
             if t1 != Bool:
                 raise Exception(f'{node.while_exp.location}: Expected Bool, got {t1}.')
-            return typecheck(node.do_exp, tab)
+            typecheck(node.do_exp, tab)
+            return Unit
             
     
     raise Exception(f'{node.location}: Unexpected node.')

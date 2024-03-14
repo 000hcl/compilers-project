@@ -1,12 +1,12 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from compiler.objs.location import Location
-from compiler.objs.types import Type
+from compiler.objs.types import Type, Unit
 
 @dataclass
 class Expression:
     """Base class for AST nodes representing expressions."""
     location: Location | None
-
+    type: Type = field(kw_only=True, default=Unit)
 
 @dataclass
 class Literal(Expression):
@@ -16,7 +16,6 @@ class Literal(Expression):
 @dataclass
 class Identifier(Expression):
     name: str
-    type: None = None
 
 @dataclass
 class TypeExpr:
