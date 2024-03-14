@@ -157,4 +157,19 @@ class TypeCheckerTest(unittest.TestCase):
         
         with self.assertRaises(Exception):
             typecheck(invalid)
-        
+    
+    def test_types_passed_down_to_ast_nodes(self) -> None:
+        i1 = parse(tokenize('var x = 10;'))
+        i2 = parse(tokenize('9>9;'))
+        typecheck(i1)
+        assert(i1.type == Int)
+        assert(i2.type == Unit)
+        typecheck(i2)
+        passed = False
+        if isinstance(i1, VarDec) and isinstance(i2, BinaryOp):
+            assert(i1.name.type == Int)
+            assert(i2.left.type == Int)
+            assert(i2.right.type == Int)
+            passed = True
+        assert(i2.type == Bool)
+        assert(passed)

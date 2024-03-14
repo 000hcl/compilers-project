@@ -73,19 +73,24 @@ def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
     match node:
         case ast.Literal():
             if type(node.value) == int:
+                node.type = Int
                 return Int
             elif type(node.value) == bool:
+                node.type = Bool
                 return Bool
             elif node.value is None:
+                node.type = Unit
                 return Unit
             else:
                 raise Exception(f'{node.location}: Unexpected type. Expected Bool, Int or Unit.')
+            
 
         case ast.Identifier():
             tab_type = tab.get_type(node.name)
             if tab_type is None:
                 raise Exception(f'{node.location}: Variable not defined.')
             else:
+                #node should already have been assigned a type via declaration or assignment
                 return tab_type
         
         case ast.VarDec():
@@ -101,6 +106,8 @@ def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
             #only supports var x:Int/Bool/Unit = ...; declarations
             if value_type == node_type:
                 tab.locals[name] = node_type
+                node.name.type = node_type
+                node.type = node_type
                 return node_type
             else:
                 raise Exception(f'{node.location}: Incompatible types: {value_type} and {node_type}.')
@@ -110,11 +117,14 @@ def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
             for exp in node.expressions:
                 #check the expressions are ok
                 typecheck(exp, child_tab)
-            return typecheck(node.result, child_tab)
+            node_type = typecheck(node.result, child_tab)
+            node.type = node_type
+            return node_type
         
         case ast.FunctionNode():
             func_type = tab.get_function_type(node.function.name)
             if typecheck(node.arguments[0], tab) == func_type.parameters[0]:
+                node.type = func_type.result
                 return func_type.result
             else:
                 raise Exception(f'{node.location}: Function "{node.function}" not defined.')
@@ -124,11 +134,13 @@ def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
             element_type = typecheck(node.element, tab)
             if node.op == '-':
                 if element_type == Int:
+                    node.type = Int
                     return Int
                 else:
                     raise Exception(f'{node.location}: Incompatible type {element_type} with operator "-". Expected Int.')
             elif node.op == 'not':
                 if element_type == Bool:
+                    node.type = Bool
                     return Bool
                 else:
                     raise Exception(f'{node.location}: Incompatible type {element_type} with operator "not". Expected Bool.')
@@ -144,9 +156,11 @@ def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
                 if isinstance(node.left, ast.Identifier):
                     type_updated = tab.set_type(node.left.name, t2)
                     if type_updated:
+                        node.type = t1
                         return t1
                     else:
                         raise Exception(f'{node.location}: "{node.left.name}" has not been declared.')
+                node.type = t1
                 return t1
 
         case ast.BinaryOp():
@@ -155,6 +169,7 @@ def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
             
             if node.op in ['==','!=']:
                 if t1 == t2:
+                    node.type = Bool
                     return Bool
                 else:
                     raise Exception(f'{node.location}: Expected two of the same types, got {t1} and {t2}.')
@@ -164,6 +179,7 @@ def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
             if t1 != op_type.parameters[0] or t2 != op_type.parameters[1]:
                 raise Exception(f'{node.location}: Expected {op_type.parameters[0]} and {op_type.parameters[1]}.')
             else:
+                node.type = op_type.result
                 return op_type.result
 
         case ast.IfThenElse():
@@ -175,6 +191,7 @@ def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
                 t3 = typecheck(node.else_branch, tab)
                 if t2 != t3:
                     raise Exception(f'{node.location}: Expected two of the same type, got {t2} and {t3}.')
+            node.type = t2
             return t2
 
         case ast.Loop():
@@ -182,6 +199,7 @@ def typecheck_lower(node: ast.Expression, tab:SymTab) -> Type:
             if t1 != Bool:
                 raise Exception(f'{node.while_exp.location}: Expected Bool, got {t1}.')
             typecheck(node.do_exp, tab)
+            node.type = Unit
             return Unit
             
     
